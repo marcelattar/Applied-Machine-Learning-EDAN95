@@ -1,0 +1,130 @@
+def ID3(self, samples, target_attribute, attributes, target_modified):
+        att_temp = attributes.copy()
+        node = self.new_ID3_node()
+        c = self.classCount(target_modified)
+
+        if len(set(target_modified)) == 1:
+            node['label'] = list(set(target_modified))[0]
+            node['samples'] = len(samples)
+            node['classCounts'] = c
+            return node
+
+        if not attributes:
+            for i, tar in enumerate(target_modified):
+                c = self.classCount(target_modified)
+                node["label"] = max(c.items(), key = operator.itemgetter(1))[0]
+                node["entropy"] = self.firstI(target_modified)
+                node["samples"] = len(samples)
+                node['classCounts'] = c
+                return node
+        else:
+            A, entropy = self.find_split_attr(samples, target_modified, attributes)
+            node["attribute"] = A
+            node["entropy"] = entropy
+            node["samples"] = len(samples)
+            node['classCounts'] = c
+
+            for v in attributes[A]:
+                sample_vi = []
+                target_sample = []
+                for i in range(len(samples)):
+                    if v in samples[i]:
+                        sample_vi.append(samples[i])
+                        target_sample.append(target_modified[i])
+
+                if not sample_vi:
+                    leaf_node = self.new_ID3_node()
+                    c = self.classCount(target_modified)
+                    leaf_node["label"] = max(c.items(), key = operator.itemgetter(1))[0]
+                    leaf_node["samples"] = 0
+                    self.add_node_to_graph(leaf_node, node['id'])
+                    node['nodes'].append(leaf_node)
+
+                else:
+                    att_temp.pop(A, None)
+                    node1 = self.ID3(sample_vi, A, att_temp, target_sample)
+                    self.add_node_to_graph(node1, node['id'])
+                    node['nodes'].append(node1)
+
+            return node
+            
+            
+            
+            
+            
+ -----------------------------------
+ 
+ # For you to fill in; Suggested function to find the best attribute to split with, given the set of
+    # remaining attributes, the currently evaluated data and target.
+    def find_split_attr(self, attributes, data, target):
+        
+        # Some necesarry conversions
+        target_array = np.array(target)
+        
+        ## This calculates the Entropy function, I(S)
+        target_occurence = np.array(list(Counter(target).values()))
+        target_freq = np.divide(target_occurence, np.sum(target_occurence))
+        I_S_list = [-target_freq[i]*math.log2(target_freq[i]) for i in range(len(Counter(target).keys()))]
+        I_S = sum(I_S_list)
+        
+        ## This calculates the Information Gain, G(S,A), for each attribute
+        attr_keys = np.array(list(attributes.keys()), dtype=str)
+        # This list will be used to check which attribute produces the biggest information Gain
+        G_SA = np.array([attr_keys, np.zeros(len(attributes) , dtype=int)])
+        
+        idx1 = 0
+        for j in attr_keys:
+            
+            attr_values = attributes.get(j)
+            #print(attr_values)
+            attr_I_S = [0]*len(attr_values)
+            
+            idx2 = 0
+            temp_list = [0]*len(attr_values)
+            for l in attr_values:
+                
+                #attr_data = np.array([data[i] for i in range(len(data)) if data[i][idx1]==l])
+                attr_data = np.array([data[i] for i in range(len(data)) if l in str(data[i]))
+                #attr_target = target_array[np.array([data[i][idx1]==l for i in range(len(data))])]
+                attr_target = target_array[np.array([data[i][idx1]==l for i in range(len(data))])]                      
+            
+                # Returns a list with the number of times a class occurs for the given attribute data
+                attr_target_occurence = np.array(list(Counter(attr_target).values()))
+                #print(attr_target_occurence)
+                # Returns a list with the frequency of a class occurence for the given attribute data
+                attr_target_freq = np.divide(attr_target_occurence, np.sum(attr_target_occurence))
+                
+                #print(attr_target_occurence)
+                
+                attr_I_S_list = [-attr_target_freq[i]*math.log2(attr_target_freq[i]) for i in range(len(Counter(attr_target).keys()))]
+                attr_I_S[idx2] = sum(attr_I_S_list)
+                
+                print(['attr_target_freq: ', attr_target_freq])
+                print(['attr_data: ', attr_data])
+                print(['attr_I_S_list: ', attr_I_S_list])
+                
+                temp_list[idx2] = np.sum(attr_target_occurence)
+                
+                idx2 += 1
+            
+            #print(temp_list)
+            #print(attr_I_S)
+            V = 0
+            for k in range(len(attr_values)):
+                V += temp_list[k]/len(data)*attr_I_S[k]
+            #print(['attr_I_S: ', attr_I_S])
+            #print(['temp_list: ', temp_list])
+            #print(['length of V: ',len(attr_values)])
+            print(['V: ', V])
+            G_SA[1][idx1] = I_S - V
+            idx1 +=1
+        
+        a = np.array(G_SA[1])
+        a = a.astype(np.float)
+        index = np.where(a == np.amax(a))
+        best_attribute = G_SA[0][index]
+        
+        best_attribute = np.array2string(best_attribute)
+        #best_attribute = str(best_attribute)
+        #print(best_attribute)
+        return best_attribute, I_S, G_SA
