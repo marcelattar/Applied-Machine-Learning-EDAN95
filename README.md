@@ -15,4 +15,4 @@ Applied Machine Learning, course at LTH. Took it in autumn 2019. Course code EDA
 
 - **Project 6:** Gaussian NBC with the EM algorithm
 
-- **Project 7:** Reinforcement learning: Monte Carle \epsilon -greedy control algorithm
+- **Project 7:** Reinforcement learning: Monte Carle epsilon-greedy control algorithm
